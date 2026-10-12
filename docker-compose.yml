@@ -1,0 +1,92 @@
+services:
+  # All external traffic comes here first. It handles authentication and routes
+  # Valid requests to the vLLM service
+  nginx:
+    image: nginx:latest
+    # Mount our custom Nginx configuration.
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      # Expose port 8000 on the host, mapping to port 80 inside the Nginx container.
+      # This is now the ONLY entry point for the LLM API.
+      - "8000:80"
+    # Ensure Nginx starts after vLLM is available.
+    depends_on:
+      - vllm
+    restart: unless-stopped
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    command: >
+      --model Qwen/Qwen2.5-1.5B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --dtype auto
+      --gpu-memory-utilization 0.90
+      --max-model-len 4096
+    environment:
+      # Pass the Hugging Face token from your host machine's environment.
+      - HF_TOKEN=${HF_TOKEN}
+
+    # Docker will periodically hit the /health endpoint. If it fails, Docker
+    # will restart the container automatically.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      # Give the model plenty of time to download and load on the first start.
+      start_period: 300s
+    # Use 'on-failure' to restart the container if it crashes OR fails its healthcheck.
+    restart: on-failure
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_PROVISIONING_PATH=/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      # Expose the MLFLOW UI on port 5000
+      - "5000:5000"
+    volumes:
+      # Mount a named volume to persist experiment data
+      - mlflow-data:/mlflow
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root file:///mlflow/artifacts
+      --allowed-hosts "*"
+      --cors-allowed-origins "*"
+    restart: unless-stopped
+
+volumes:
+  mlflow-data:
