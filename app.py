@@ -29,13 +29,16 @@ human_msg = HumanMessage(
 
 messages = [system_msg, human_msg]
 
-%%time
+
 response = model.invoke(messages)
 print(response.content)
 
-messages.append(response)
-messages.append(
-    HumanMessage(
-        "So what are the top 3 tools for LLMOps? Summarize each in a few words."
-    )
-)
+# messages.append(response)
+# messages.append(
+#     HumanMessage(
+#         "So what are the top 3 tools for LLMOps? Summarize each in a few words."
+#     )
+# )
+
+# response = model.invoke(messages)
+# print(response.content)

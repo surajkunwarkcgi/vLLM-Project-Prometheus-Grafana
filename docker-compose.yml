@@ -9,7 +9,7 @@ services:
     ports:
       # Expose port 8000 on the host, mapping to port 80 inside the Nginx container.
       # This is now the ONLY entry point for the LLM API.
-      - "8000:80"
+      - "40836:80"
     # Ensure Nginx starts after vLLM is available.
     depends_on:
       - vllm
@@ -74,7 +74,7 @@ services:
     image: ghcr.io/mlflow/mlflow:latest
     ports:
       # Expose the MLFLOW UI on port 5000
-      - "5000:5000"
+      - "40685:5000"
     volumes:
       # Mount a named volume to persist experiment data
       - mlflow-data:/mlflow
