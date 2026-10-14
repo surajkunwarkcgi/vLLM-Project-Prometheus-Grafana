@@ -4,7 +4,7 @@ import mlflow
 from langchain.chat_models import init_chat_model
 from langchain.messages import HumanMessage, SystemMessage
 
-SERVER_API = ""
+SERVER_API = os.getenv("SERVER_API", "localhost")
 API_URL = f"http://{SERVER_API}:40836/v1"
 TRACKING_URL = f"http://{SERVER_API}:40685"
 API_KEY = "MLEXPERT_RULES"

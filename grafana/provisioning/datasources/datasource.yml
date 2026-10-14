@@ -2,7 +2,7 @@ apiVersion: 1
 
 datasources:
   - name: Prometheus # The name you'll see in Grafana
-    type: premetheus
+    type: prometheus
     access: proxy # Access via Grafana backend
     url: http://prometheus:9090 # The internal URL
     isDefault: true # Make this the default datasource
